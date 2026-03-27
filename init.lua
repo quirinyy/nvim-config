@@ -17,7 +17,7 @@
 ========       /:::========|  |==hjkl==:::\  \ required \    ========
 ========      '""""""""""""'  '""""""""""""'  '""""""""""'   ========
 ========                                                     ========
-=====================================================================
+=====================================================================ini
 =====================================================================
 
 What is Kickstart?
@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -100,21 +100,25 @@ vim.g.have_nerd_font = false
 
 -- Make line numbers default
 vim.o.number = true
+vim.o.tabstop = 4
+vim.o.softtabstop = 4
+vim.o.shiftwidth = 4
+vim.o.expandtab = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+vim.o.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
 
 -- Don't show the mode, since it's already in the status line
-vim.o.showmode = false
+-- vim.o.showmode = false
 
 -- Sync clipboard between OS and Neovim.
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
+-- vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
 
 -- Enable break indent
 vim.o.breakindent = true
@@ -166,11 +170,27 @@ vim.o.confirm = true
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
-
+-- Neo-tree Keymap
+vim.keymap.set('n', '<leader>e', '<cmd>Neotree reveal float<CR>', { desc = 'Neo-tree [E]xplorer Float' })
+-- vim.keymap.set('n', '<leader>e', '|:Neotree toggle<CR>', { desc = 'Neo-tree [E]xplorer' })
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+-- Press crtl ; to jump to end of line type ; and make new line in instert mode
+vim.keymap.set('i', '<C-;>', function()
+  local char = ';'
+  if vim.bo.filetype == 'python' then char = ':' end
+  vim.api.nvim_input('<Esc>A' .. char .. '<CR>')
+end, { desc = 'Smart end with ctrl + ;' })
+
+-- Use Leader y for copy to global clipboard and lead p to paste from global clipboard
+vim.keymap.set({ 'n', 'v' }, '<leader>y', '"+y', { desc = 'Yank to global clipboard' })
+vim.keymap.set({ 'n', 'v' }, '<leader>p', '"+p', { desc = 'Paste from global clipboard' })
+-- Use Lead a to select all lines
+vim.keymap.set('n', '<leader>a', 'ggVG', { desc = 'Select all' })
+-- Press crtl + [ to jump to end of line, type { and make new line in insert mode
+vim.keymap.set('i', "<C-'>", function() vim.api.nvim_input '<Esc>A {<CR>' end, { desc = "Smart { at with crtl + ' and make new line in insert mode" })
 -- Diagnostic Config & Keymaps
 -- See :help vim.diagnostic.Opts
 vim.diagnostic.config {
@@ -198,10 +218,10 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -603,9 +623,13 @@ require('lazy').setup({
       --  See `:help lsp-config` for information about keys and how to configure
       ---@type table<string, vim.lsp.Config>
       local servers = {
-        -- clangd = {},
+        clangd = {},
+        pyright = {},
+        ruff = {},
+        julials = {},
+        jdtls = {},
+        bashls = {},
         -- gopls = {},
-        -- pyright = {},
         -- rust_analyzer = {},
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -687,7 +711,7 @@ require('lazy').setup({
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
+        local disable_filetypes = {}
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
@@ -699,9 +723,12 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        python = { 'ruff_format' },
+        c = { 'clang-format' },
+        cpp = { 'clang-format' },
+        java = { 'google-java-format' },
+        sh = { 'shfmt' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
       },
@@ -763,8 +790,7 @@ require('lazy').setup({
         -- <c-k>: Toggle signature help
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
-        preset = 'default',
-
+        preset = 'super-tab',
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
       },
@@ -801,28 +827,28 @@ require('lazy').setup({
     },
   },
 
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
-      }
-
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
-    end,
-  },
-
+  -- { -- You can easily change to a different colorscheme.
+  --   -- Change the name of the colorscheme plugin below, and then
+  --   -- change the command in the config to whatever the name of that colorscheme is.
+  --   --
+  --   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  --   'folke/tokyonight.nvim',
+  --   priority = 1000, -- Make sure to load this before all the other start plugins.
+  --   config = function()
+  --     ---@diagnostic disable-next-line: missing-fields
+  --     require('tokyonight').setup {
+  --       styles = {
+  --         comments = { italic = false }, -- Disable italics in comments
+  --       },
+  --     }
+  --
+  --     --     -- Load the colorscheme here.
+  --     --     -- Like many other themes, this one has different styles, and you could load
+  --     --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --     vim.cmd.colorscheme 'tokyonight-storm'
+  --     vim.api.nvim_set_hl(0, 'EndOfBuffer', { link = 'NonText' })
+  --   end,
+  -- },
   -- Highlight todo, notes, etc in comments
   {
     'folke/todo-comments.nvim',
@@ -915,9 +941,11 @@ require('lazy').setup({
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.rose-pine',
+  require 'kickstart.plugins.catpuccin',
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
